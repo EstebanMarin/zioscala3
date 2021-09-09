@@ -2,8 +2,8 @@ package com.estebanmarin
 package zioscala3
 
 object ourzio:
-  final case class ZIO[E, A](thunk: () => Either[E, A]):
-    def flatMap[B](azb: A => ZIO[E, B]): ZIO[E, B] =
+  final case class ZIO[+E, A](thunk: () => Either[E, A]):
+    def flatMap[E1 >: E, B](azb: A => ZIO[E1, B]): ZIO[E1, B] =
       ZIO { () =>
         val errorOrA = thunk()
         val zErrorb = errorOrA match
