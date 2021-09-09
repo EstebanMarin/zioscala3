@@ -2,27 +2,35 @@ package com.estebanmarin
 package zioscala3
 
 object ourzio:
-  final case class ZIO[A](thunk: () => A):
-    def flatMap[B](azb: A => ZIO[B]): ZIO[B] =
-      ZIO.succeed {
-        val a: A = thunk()
-        val zb: ZIO[B] = azb(a)
-        val b: B = zb.thunk()
-        b
+  final case class ZIO[E, A](thunk: () => Either[E, A]):
+    def flatMap[B](azb: A => ZIO[E, B]): ZIO[E, B] =
+      ZIO { () =>
+        val errorOrA = thunk()
+        val zErrorb = errorOrA match
+          case Right(a) => azb(a)
+          case Left(e) => ZIO.fail(e)
+        val errorOrB = zErrorb.thunk()
+        errorOrB
       }
 
-    def map[B](ab: A => B): ZIO[B] =
-      ZIO.succeed {
-        val a = thunk()
-        val b = ab(a)
-        b
+    def map[B](ab: A => B): ZIO[E, B] =
+      ZIO { () =>
+        val errorOrA = thunk()
+        val errorOrB = errorOrA match
+          case Right(a) => Right(ab(a))
+          case Left(e) => Left(e)
+
+        errorOrB
       }
 
   end ZIO
 
   object ZIO:
-    def succeed[A](a: => A): ZIO[A] =
-      ZIO(() => a)
+    def succeed[A](a: => A): ZIO[Nothing, A] =
+      ZIO(() => Right(a))
+
+    def fail[E](e: => E): ZIO[E, Nothing] =
+      ZIO(() => Left(e))
 
   object console:
     def putStrLn(line: => String) =
@@ -32,5 +40,5 @@ object ourzio:
 
   object Runtime:
     object default:
-      def unsafeRunSync[A](zio: => ZIO[A]) =
+      def unsafeRunSync[E, A](zio: => ZIO[E, A]) =
         zio.thunk()
