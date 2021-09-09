@@ -1,4 +1,5 @@
-package com.estebanmarin.zioscala3
+package com.estebanmarin
+package zioscala3
 
 object ourzio:
   final case class ZIO[A](thunk: () => A):
