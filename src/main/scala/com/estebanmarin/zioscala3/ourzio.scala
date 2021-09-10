@@ -23,6 +23,16 @@ object ourzio:
         errorOrB
       }
 
+    def catchAll[E2, A1 >: A](h: E => ZIO[E2, A1]): ZIO[E2, A1] =
+      ZIO { () =>
+        val errorOrA = thunk()
+        val zErrorb = errorOrA match
+          case Right(a) => ZIO.succeed(a)
+          case Left(e) => h(e)
+        val errorOrB = zErrorb.thunk()
+        errorOrB
+      }
+
   end ZIO
 
   object ZIO:

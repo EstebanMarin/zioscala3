@@ -10,7 +10,9 @@ object Main extends scala.App:
       _ <- console.putStrLn("─" * 100)
       _ <- console.putStrLn("What's your name")
       name: String <- ZIO.succeed("Esteban")
-      _ <- ZIO.effect(throw RuntimeException("Boom"))
+      _ <- ZIO
+        .effect(throw RuntimeException("Boom"))
+        .catchAll(h = _ => ZIO.succeed(println("Solved the error")))
       _ <- console.putStrLn(s"Hello $name")
       _ <- console.putStrLn("─" * 100)
     yield ()
