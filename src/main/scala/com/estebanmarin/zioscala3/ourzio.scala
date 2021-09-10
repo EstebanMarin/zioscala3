@@ -6,9 +6,10 @@ object ourzio:
     def flatMap[E1 >: E, B](azb: A => ZIO[E1, B]): ZIO[E1, B] =
       ZIO { () =>
         val errorOrA = thunk()
-        val zErrorb = errorOrA match
-          case Right(a) => azb(a)
-          case Left(e) => ZIO.fail(e)
+        val zErrorb = errorOrA.fold(fa = e => ZIO.fail(e), fb = a => azb(a))
+        // val zErrorb = errorOrA match
+        //   case Right(a) => azb(a)
+        //   case Left(e) => ZIO.fail(e)
         val errorOrB = zErrorb.thunk()
         errorOrB
       }
@@ -26,9 +27,10 @@ object ourzio:
     def catchAll[E2, A1 >: A](h: E => ZIO[E2, A1]): ZIO[E2, A1] =
       ZIO { () =>
         val errorOrA = thunk()
-        val zErrorb = errorOrA match
-          case Right(a) => ZIO.succeed(a)
-          case Left(e) => h(e)
+        val zErrorb = errorOrA.fold(fa = h, fb = ZIO.succeed)
+        // val zErrorb = errorOrA match
+        //   case Right(a) => ZIO.succeed(a)
+        //   case Left(e) => h(e)
         val errorOrB = zErrorb.thunk()
         errorOrB
       }
