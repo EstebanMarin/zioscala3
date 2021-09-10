@@ -12,7 +12,8 @@ object Main extends scala.App:
       name: String <- ZIO.succeed("Esteban")
       _ <- ZIO
         .effect(throw RuntimeException("Boom"))
-        .catchAll(h = _ => ZIO.succeed(println("Solved the error")))
+        .mapError(_.getMessage)
+      // .catchAll(h = _ => ZIO.succeed(println("Solved the error")))
       _ <- console.putStrLn(s"Hello $name")
       _ <- console.putStrLn("─" * 100)
     yield ()

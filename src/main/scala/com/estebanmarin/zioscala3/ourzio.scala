@@ -35,6 +35,16 @@ object ourzio:
         errorOrB
       }
 
+    def mapError[E2](h: E => E2): ZIO[E2, A] =
+      ZIO { () =>
+        val errorOrA = thunk()
+        val errorOrB = errorOrA match
+          case Right(a) => Right(a)
+          case Left(e) => Left(h(e))
+
+        errorOrB
+      }
+
   end ZIO
 
   object ZIO:
