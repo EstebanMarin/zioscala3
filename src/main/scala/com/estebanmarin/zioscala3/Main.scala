@@ -2,7 +2,7 @@ package com.estebanmarin
 package zioscala3
 
 // import zio.*
-import ourzio.*
+// import ourzio.*
 
 object Main extends scala.App:
   lazy val program =
@@ -10,9 +10,9 @@ object Main extends scala.App:
       _ <- console.putStrLn("─" * 100)
       _ <- console.putStrLn("What's your name")
       name: String <- ZIO.succeed("Esteban")
-      _ <- ZIO
-        .effect(throw RuntimeException("Boom"))
-        .mapError(_.getMessage)
+      // _ <- ZIO
+      // .effect(throw runtimeexception("boom"))
+      // .maperror(_.getmessage)
       // .catchAll(h = _ => ZIO.succeed(println("Solved the error")))
       _ <- console.putStrLn(s"Hello $name")
       _ <- console.putStrLn("─" * 100)
