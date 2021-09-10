@@ -2,7 +2,7 @@ package com.estebanmarin
 package zioscala3
 
 object ourzio:
-  final case class ZIO[+E, A](thunk: () => Either[E, A]):
+  final case class ZIO[+E, +A](thunk: () => Either[E, A]):
     def flatMap[E1 >: E, B](azb: A => ZIO[E1, B]): ZIO[E1, B] =
       ZIO { () =>
         val errorOrA = thunk()
@@ -31,6 +31,12 @@ object ourzio:
 
     def fail[E](e: => E): ZIO[E, Nothing] =
       ZIO(() => Left(e))
+
+    def effect[A](a: => A): ZIO[Throwable, A] =
+      ZIO { () =>
+        try Right(a)
+        catch case ex: Throwable => Left(ex)
+      }
 
   object console:
     def putStrLn(line: => String) =
