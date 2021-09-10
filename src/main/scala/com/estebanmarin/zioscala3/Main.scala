@@ -40,9 +40,9 @@ object GoogleImp:
         if topic == "cats" then 1337 else 1338
 
 object DependecyGraph:
-  lazy val live: BusinessLogic =
-    val google: Google = GoogleImp.make
-    val businessLogic = BusinessLogic.make.apply(google)
+  lazy val live: Any => BusinessLogic = _ =>
+    val google: Google = GoogleImp.live.apply(())
+    val businessLogic = BusinessLogic.live.apply(google)
     businessLogic
 
   lazy val make: BusinessLogic =
@@ -52,7 +52,7 @@ object DependecyGraph:
     businessLogic
 
 object Main extends scala.App:
-  lazy val businessLogic = DependecyGraph.make
+  lazy val businessLogic = DependecyGraph.live.apply(())
 
   println("-" * 50)
   println(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats"))
