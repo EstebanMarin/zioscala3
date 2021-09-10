@@ -25,18 +25,26 @@ trait Google:
   def countPicturesOf(topic: String): Int
 
 object BusinessLogic:
+  lazy val live: Google => BusinessLogic = google => make(google)
   def make(google: Google): BusinessLogic =
     new:
       override def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
         google.countPicturesOf(topic) % 2 == 0
 
 object GoogleImp:
+  lazy val live: Any => Google =
+    _ => make
   lazy val make: Google =
     new:
       override def countPicturesOf(topic: String): Int =
         if topic == "cats" then 1337 else 1338
 
 object DependecyGraph:
+  lazy val live: BusinessLogic =
+    val google: Google = GoogleImp.make
+    val businessLogic = BusinessLogic.make.apply(google)
+    businessLogic
+
   lazy val make: BusinessLogic =
     val google: Google = GoogleImp.make
     //classical dependency injection
