@@ -1,0 +1,11 @@
+{
+    "files.watcherExclude": {
+        "**/target": true
+    },
+    "workbench.colorCustomizations": {
+        "titleBar.activeForeground": "#fdfcffef",
+        "titleBar.inactiveForeground": "#000000CC",
+        "titleBar.activeBackground": "#2c87ffcc",
+        "titleBar.inactiveBackground": "#2c87ffcc"
+    }
+}

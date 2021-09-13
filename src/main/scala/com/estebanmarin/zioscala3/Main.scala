@@ -54,6 +54,8 @@ object DependecyGraph:
 object Main extends scala.App:
   lazy val businessLogic = DependecyGraph.live.apply(())
 
+  lazy val bl = DependecyGraph.live
+
   println("-" * 50)
   println(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats"))
   println(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs"))
