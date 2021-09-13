@@ -1,8 +1,8 @@
 package com.estebanmarin
 package zioscala3
 
-final class ZIO[R, +E, +A](val run: R => Either[E, A]):
-  def flatMap[E1 >: E, B](azb: A => ZIO[R, E1, B]): ZIO[R, E1, B] =
+final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
+  def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO { r =>
       val errorOrA = run(r)
       // val zErrorb = errorOrA.fold(fa = e => ZIO.fail(e), fb = a => azb(a))
@@ -23,7 +23,7 @@ final class ZIO[R, +E, +A](val run: R => Either[E, A]):
       errorOrB
     }
 
-  def catchAll[E2, A1 >: A](h: E => ZIO[R, E2, A1]): ZIO[R, E2, A1] =
+  def catchAll[R1 <: R, E2, A1 >: A](h: E => ZIO[R1, E2, A1]): ZIO[R1, E2, A1] =
     ZIO { r =>
       val errorOrA = run(r)
       // val zErrorb = errorOrA.fold(fa = h, fb = ZIO.succeed)
