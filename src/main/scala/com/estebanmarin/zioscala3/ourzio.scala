@@ -67,5 +67,7 @@ object console:
 
 object Runtime:
   object default:
-    def unsafeRunSync[E, A](zio: => ZIO[Any, E, A]): Either[E, A] =
+    def unsafeRunSync[E, A](zio: => ZIO[ZEnv, E, A]): Either[E, A] =
       zio.run(())
+
+type ZEnv = Unit

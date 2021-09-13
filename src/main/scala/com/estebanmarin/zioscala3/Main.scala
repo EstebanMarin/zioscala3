@@ -5,6 +5,7 @@ package zioscala3
 // import ourzio.*
 
 object Main extends scala.App:
+  Runtime.default.unsafeRunSync(program)
   lazy val program =
     for
       _ <- console.putStrLn("─" * 100)
