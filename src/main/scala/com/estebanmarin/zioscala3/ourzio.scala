@@ -5,7 +5,6 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO { r =>
       val errorOrA = run(r)
-      // val zErrorb = errorOrA.fold(fa = e => ZIO.fail(e), fb = a => azb(a))
       val zErrorb = errorOrA match
         case Right(a) => azb(a)
         case Left(e) => ZIO.fail(e)
@@ -25,7 +24,6 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def catchAll[R1 <: R, E2, A1 >: A](h: E => ZIO[R1, E2, A1]): ZIO[R1, E2, A1] =
     ZIO { r =>
       val errorOrA = run(r)
-      // val zErrorb = errorOrA.fold(fa = h, fb = ZIO.succeed)
       val zErrorb = errorOrA match
         case Right(a) => ZIO.succeed(a)
         case Left(e) => h(e)
@@ -42,7 +40,6 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
       val errorOrB = errorOrA match
         case Right(a) => Right(a)
         case Left(e) => Left(h(e))
-
       errorOrB
     }
 

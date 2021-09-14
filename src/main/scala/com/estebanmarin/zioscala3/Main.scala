@@ -26,8 +26,8 @@ trait Google:
   def countPicturesOf(topic: String): Int
 
 object BusinessLogic:
-  lazy val live: Google => BusinessLogic =
-    fromFunction(make)
+  lazy val live: ZIO[Google, Nothing, BusinessLogic] =
+    ZIO.fromFunction(make)
 
   def make(google: Google): BusinessLogic =
     new:
@@ -35,18 +35,23 @@ object BusinessLogic:
         google.countPicturesOf(topic) % 2 == 0
 
 object GoogleImp:
-  lazy val live: Any => Google =
-    succeed(make)
+  lazy val live: ZIO[Any, Nothing, Google] =
+    ZIO.succeed(make)
   lazy val make: Google =
     new:
       override def countPicturesOf(topic: String): Int =
         if topic == "cats" then 1337 else 1338
 
 object DependecyGraph:
-  lazy val live: Any => BusinessLogic =
-    val google = GoogleImp.live.provide(()).apply(())
-    val businessLogic = BusinessLogic.live.provide(google)
-    businessLogic
+  lazy val live: ZIO[Any, Nothing, BusinessLogic] =
+    for
+      google <- GoogleImp.live
+      businessLogicMake <- BusinessLogic.live.provide(google)
+    yield businessLogicMake
+
+  // val google = GoogleImp.live.provide(()).apply(())
+  // val businessLogic = BusinessLogic.live.provide(google)
+  // businessLogic
 
   lazy val make: BusinessLogic =
     val google: Google = GoogleImp.make
@@ -55,21 +60,12 @@ object DependecyGraph:
     businessLogic
 
 object Main extends scala.App:
-  lazy val businessLogic = DependecyGraph.live.apply(())
-
-  lazy val bl = DependecyGraph.live
-
-  println("-" * 50)
-  println(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats"))
-  println(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs"))
-  println("=" * 50)
-
-extension [R, A](run: R => A)
-  def provide(r: => R): Any => A =
-    _ => run(r)
-
-def succeed[A](a: => A): Any => A =
-  _ => a
-
-def fromFunction[R, A](run: R => A): R => A =
-  r => run(r)
+  Runtime.default.unsafeRunSync(program)
+  lazy val program =
+    for
+      businessLogic <- DependecyGraph.live
+      _ <- console.putStrLn("-" * 50)
+      _ <- console.putStrLn(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
+      _ <- console.putStrLn(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
+      _ <- console.putStrLn("-" * 50)
+    yield ()
