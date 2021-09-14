@@ -3,45 +3,19 @@ package zioscala3
 
 final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
-    ZIO { r =>
-      val errorOrA = run(r)
-      val zErrorb = errorOrA match
-        case Right(a) => azb(a)
-        case Left(e) => ZIO.fail(e)
-      val errorOrB = zErrorb.run(r)
-      errorOrB
-    }
+    ZIO(r => run(r).fold(ZIO.fail, azb).run(r))
 
   def map[B](ab: A => B): ZIO[R, E, B] =
-    ZIO { r =>
-      val errorOrA = run(r)
-      val errorOrB = errorOrA match
-        case Right(a) => Right(ab(a))
-        case Left(e) => Left(e)
-      errorOrB
-    }
+    ZIO(r => run(r).map(ab))
 
   def catchAll[R1 <: R, E2, A1 >: A](h: E => ZIO[R1, E2, A1]): ZIO[R1, E2, A1] =
-    ZIO { r =>
-      val errorOrA = run(r)
-      val zErrorb = errorOrA match
-        case Right(a) => ZIO.succeed(a)
-        case Left(e) => h(e)
-      val errorOrB = zErrorb.run(r)
-      errorOrB
-    }
+    ZIO(r => run(r).fold(h, ZIO.succeed).run(r))
 
   def provide(r: => R): ZIO[Any, E, A] =
     ZIO(_ => run(r))
 
   def mapError[E2](h: E => E2): ZIO[R, E2, A] =
-    ZIO { r =>
-      val errorOrA = run(r)
-      val errorOrB = errorOrA match
-        case Right(a) => Right(a)
-        case Left(e) => Left(h(e))
-      errorOrB
-    }
+    ZIO(r => run(r).left.map(h))
 
 end ZIO
 
