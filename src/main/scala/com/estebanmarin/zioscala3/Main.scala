@@ -64,14 +64,30 @@ object DependecyGraph:
     val bl = businessLogic.BusinessLogic.make(g)
     bl
 
+trait HasConsole:
+  def console: zioscala3.console.Console
+
+trait HasBusinessLogic:
+  def businessLogic: zioscala3.businessLogic.BusinessLogic
+
 object Main extends scala.App:
-  Runtime.default.unsafeRunSync(program.provide(DependecyGraph.make))
+  // Runtime.default.unsafeRunSync(makeProgram.provide(DependecyGraph.make))
   lazy val program =
     for
-      _ <- console.putStrLn("-" * 50)
-      cats <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats")
-      _ <- console.putStrLn(cats.toString)
-      dogs <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
-      _ <- console.putStrLn(dogs.toString)
-      _ <- console.putStrLn("-" * 50)
+      bl <- DependecyGraph.live
+      p <- makeProgram.provide {
+        new HasConsole with HasBusinessLogic:
+          override lazy val console = zioscala3.console.Console.make
+          override lazy val businessLogic = bl
+      }
+    yield p
+  lazy val makeProgram =
+    for
+      env <- ZIO.environment[HasConsole & HasBusinessLogic]
+      _ <- env.console.putStrLn("-" * 50)
+      cats <- env.businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats")
+      _ <- env.console.putStrLn(cats.toString)
+      dogs <- env.businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
+      _ <- env.console.putStrLn(dogs.toString)
+      _ <- env.console.putStrLn("-" * 50)
     yield ()
