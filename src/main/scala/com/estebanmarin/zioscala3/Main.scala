@@ -3,24 +3,6 @@ package zioscala3
 
 import com.estebanmarin.zioscala3.businessLogic.BusinessLogic
 
-// import zio.*
-// import ourzio.*
-
-// object Main extends scala.App:
-//   Runtime.default.unsafeRunSync(program)
-//   lazy val program =
-//     for
-//       _ <- console.putStrLn("─" * 100)
-//       _ <- console.putStrLn("What's your name")
-//       name: String <- ZIO.succeed("Esteban")
-//       // _ <- ZIO
-//       // .effect(throw runtimeexception("boom"))
-//       // .maperror(_.getmessage)
-//       // .catchAll(h = _ => ZIO.succeed(println("Solved the error")))
-//       _ <- console.putStrLn(s"Hello $name")
-//       _ <- console.putStrLn("─" * 100)
-//     yield ()
-
 trait Google:
   def countPicturesOf(topic: String): ZIO[Any, Nothing, Int]
 
@@ -70,12 +52,12 @@ object Main extends scala.App:
   lazy val program =
     for
       bl <- DependecyGraph.live
-      p <- makeProgram.provide(zio.Has(bl) `union` zio.Has(console.Console.make))
+      p <- makeProgram.provide(Has(bl) union Has(console.Console.make))
     yield p
 
   lazy val makeProgram =
     for
-      env <- ZIO.environment[zio.Has[businessLogic.BusinessLogic] & zio.Has[console.Console]]
+      env <- ZIO.environment[Has[businessLogic.BusinessLogic] & Has[console.Console]]
       _ <- env.get[console.Console].putStrLn("-" * 50)
       cats <- env.get[businessLogic.BusinessLogic].doesGoogleHaveEvenAmountOfPicturesOf("cats")
       _ <- env.get[console.Console].putStrLn(cats.toString)
