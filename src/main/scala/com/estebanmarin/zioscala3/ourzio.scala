@@ -76,14 +76,16 @@ final class AccessMPartiallyApplied[R]():
     ZIO.environment.flatMap(f)
 
 object console:
-  trait Console:
-    def putStrLn(line: => String): ZIO[Any, Nothing, Unit]
-    def getStrLn: ZIO[Any, Nothing, String]
+  type Console = Has[Console.Service]
 
   object Console:
-    lazy val live: ZIO[Any, Nothing, Console] =
+    trait Service:
+      def putStrLn(line: => String): ZIO[Any, Nothing, Unit]
+      def getStrLn: ZIO[Any, Nothing, String]
+
+    lazy val live: ZIO[Any, Nothing, Service] =
       ZIO.succeed(make)
-    lazy val make: Console =
+    lazy val make: Service =
       new:
         def putStrLn(line: => String) =
           ZIO.succeed(println(line))
@@ -91,17 +93,17 @@ object console:
           ZIO.succeed(scala.io.StdIn.readLine)
 
   def putStrLn(line: => String): ZIO[Console, Nothing, Unit] =
-    ZIO.accessM(_.putStrLn(line))
+    ZIO.accessM(_.get.putStrLn(line))
 
   def getStrLn: ZIO[Console, Nothing, String] =
-    ZIO.accessM(_.getStrLn)
+    ZIO.accessM(_.get.getStrLn)
 
 object Runtime:
   object default:
     def unsafeRunSync[E, A](zio: => ZIO[ZEnv, E, A]): Either[E, A] =
       zio.run(Has(console.Console.make))
 
-type ZEnv = Has[console.Console]
+type ZEnv = Has[console.Console.Service]
 
 final class Has[A] private (private val map: Map[String, Any])
 object Has:
@@ -115,5 +117,5 @@ object Has:
     infix def union[B <: Has[?]](b: B): A & B =
       new Has(a.map ++ b.map).asInstanceOf[A & B]
 
-    def get[S](using tag: ClassTag[S], view: A => Has[S]): S =
+    def get[S](using A => Has[S])(using tag: ClassTag[S]): S =
       a.map(tag.toString).asInstanceOf[S]

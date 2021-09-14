@@ -57,11 +57,11 @@ object Main extends scala.App:
 
   lazy val makeProgram =
     for
-      env <- ZIO.environment[Has[businessLogic.BusinessLogic] & Has[console.Console]]
-      _ <- env.get[console.Console].putStrLn("-" * 50)
+      env <- ZIO.environment[console.Console & Has[businessLogic.BusinessLogic]]
+      _ <- env.get[console.Console.Service].putStrLn("-" * 50)
       cats <- env.get[businessLogic.BusinessLogic].doesGoogleHaveEvenAmountOfPicturesOf("cats")
-      _ <- env.get[console.Console].putStrLn(cats.toString)
+      _ <- env.get[console.Console.Service].putStrLn(cats.toString)
       dogs <- env.get[businessLogic.BusinessLogic].doesGoogleHaveEvenAmountOfPicturesOf("dogs")
-      _ <- env.get[console.Console].putStrLn(dogs.toString)
-      _ <- env.get[console.Console].putStrLn("-" * 50)
+      _ <- env.get[console.Console.Service].putStrLn(dogs.toString)
+      _ <- env.get[console.Console.Service].putStrLn("-" * 50)
     yield ()
