@@ -1,6 +1,8 @@
 package com.estebanmarin
 package zioscala3
 
+import com.estebanmarin.zioscala3.businessLogic.BusinessLogic
+
 // import zio.*
 // import ourzio.*
 
@@ -20,11 +22,11 @@ package zioscala3
 //     yield ()
 
 trait Google:
-  def countPicturesOf(topic: String): Int
+  def countPicturesOf(topic: String): ZIO[Any, Nothing, Int]
 
 object businessLogic:
   trait BusinessLogic:
-    def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean
+    def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
 
   object BusinessLogic:
     lazy val live: ZIO[Google, Nothing, BusinessLogic] =
@@ -32,10 +34,15 @@ object businessLogic:
 
     def make(google: Google): BusinessLogic =
       new:
-        override def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
-          google.countPicturesOf(topic) % 2 == 0
+        override def doesGoogleHaveEvenAmountOfPicturesOf(
+            topic: String
+          ): ZIO[Any, Nothing, Boolean] =
+          google.countPicturesOf(topic).map(_ % 2 == 0)
 
-// def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
+  // google.countPicturesOf(topic).map(_ % 2 == 0)
+
+  def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[BusinessLogic, Nothing, Boolean] =
+    ZIO.accessM(_.doesGoogleHaveEvenAmountOfPicturesOf(topic))
 
 end businessLogic
 
@@ -44,8 +51,8 @@ object GoogleImp:
     ZIO.succeed(make)
   lazy val make: Google =
     new:
-      override def countPicturesOf(topic: String): Int =
-        if topic == "cats" then 1337 else 1338
+      override def countPicturesOf(topic: String): ZIO[Any, Nothing, Int] =
+        ZIO.succeed(if topic == "cats" then 1337 else 1338)
 
 object DependecyGraph:
   lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic] =
@@ -55,24 +62,18 @@ object DependecyGraph:
     yield businessLogicMake
 
   lazy val make: businessLogic.BusinessLogic =
-    val g: Google = GoogleImp.make
+    val g = GoogleImp.make
     val bl = businessLogic.BusinessLogic.make(g)
     bl
 
 object Main extends scala.App:
   Runtime.default.unsafeRunSync(program.provide(DependecyGraph.make))
-  lazy val program: ZIO[businessLogic.BusinessLogic, Nothing, Unit] =
+  lazy val program =
     for
       _ <- console.putStrLn("-" * 50)
-      cats <- ZIO
-        .access[businessLogic.BusinessLogic](
-          _.doesGoogleHaveEvenAmountOfPicturesOf("cats")
-        )
+      cats <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats")
       _ <- console.putStrLn(cats.toString)
-      dogs <- ZIO
-        .access[businessLogic.BusinessLogic](
-          _.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
-        )
+      dogs <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
       _ <- console.putStrLn(dogs.toString)
       _ <- console.putStrLn("-" * 50)
     yield ()
