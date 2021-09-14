@@ -59,10 +59,25 @@ final class AccessMPartiallyApplied[R]():
     ZIO.environment.flatMap(f)
 
 object console:
-  def putStrLn(line: => String) =
-    ZIO.succeed(println(line))
-  lazy val getStrLn =
-    ZIO.succeed(scala.io.StdIn.readLine)
+  trait Console:
+    def putStrLn(line: => String): ZIO[Any, Nothing, Unit]
+    def getStrLn: ZIO[Any, Nothing, String]
+
+  object Console:
+    lazy val live: ZIO[Any, Nothing, Console] =
+      ZIO.succeed(make)
+    lazy val make: Console =
+      new:
+        def putStrLn(line: => String) =
+          ZIO.succeed(println(line))
+        lazy val getStrLn =
+          ZIO.succeed(scala.io.StdIn.readLine)
+
+  def putStrLn(line: => String): ZIO[Console, Nothing, Unit] =
+    ZIO.accessM(_.putStrLn(line))
+
+  def getStrLn: ZIO[Console, Nothing, String] =
+    ZIO.accessM(_.getStrLn)
 
 object Runtime:
   object default:
