@@ -41,22 +41,22 @@ object ZIO:
   inline def access[R]: AccessPartiallyApplied[R] =
     AccessPartiallyApplied()
 
-  final class AccessPartiallyApplied[R]():
-    def apply[A](f: R => A): ZIO[R, Nothing, A] =
-      environment[R].map(f)
-
   inline def accessM[R]: AccessMPartiallyApplied[R] =
     AccessMPartiallyApplied()
-
-  final class AccessMPartiallyApplied[R]():
-    def apply[A](f: R => ZIO[R, Nothing, A]): ZIO[R, Nothing, A] =
-      environment.flatMap(f)
 
   inline def read[R]: ZIO[R, Nothing, R] =
     identity
 
   def identity[R]: ZIO[R, Nothing, R] =
     ZIO.fromFunction(Predef.identity)
+
+final class AccessPartiallyApplied[R]():
+  def apply[A](f: R => A): ZIO[R, Nothing, A] =
+    ZIO.environment[R].map(f)
+
+final class AccessMPartiallyApplied[R]():
+  def apply[A](f: R => ZIO[R, Nothing, A]): ZIO[R, Nothing, A] =
+    ZIO.environment.flatMap(f)
 
 object console:
   def putStrLn(line: => String) =
