@@ -17,10 +17,10 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
     ZIO(_ => run(r))
 
   //This implies the ZEnv Environment
-  def provideCustomLayer[R1 <: Has[?]](r1: => R1)(using Has[ZEnv] & R1 => R): ZIO[Has[ZEnv], E, A] =
-    provideSome[Has[ZEnv]](_.union(r1).asInstanceOf[R])
+  def provideCustomLayer[R1 <: Has[?]](r1: => R1)(using ZEnv & R1 => R): ZIO[ZEnv, E, A] =
+    provideSome[ZEnv](_.union(r1).asInstanceOf[R])
 
-  def provideCustom[R1: ClassTag](r1: R1)(using Has[ZEnv] & Has[R1] => R): ZIO[Has[ZEnv], E, A] =
+  def provideCustom[R1: ClassTag](r1: R1)(using ZEnv & Has[R1] => R): ZIO[ZEnv, E, A] =
     provideCustomLayer(Has(r1))
 
   // def provideSome[R0](f: R0 => R): ZIO[R0, E, A] =
@@ -98,10 +98,10 @@ object console:
 
 object Runtime:
   object default:
-    def unsafeRunSync[E, A](zio: => ZIO[Has[ZEnv], E, A]): Either[E, A] =
+    def unsafeRunSync[E, A](zio: => ZIO[ZEnv, E, A]): Either[E, A] =
       zio.run(Has(console.Console.make))
 
-type ZEnv = console.Console
+type ZEnv = Has[console.Console]
 
 final class Has[A] private (private val map: Map[String, Any])
 object Has:
