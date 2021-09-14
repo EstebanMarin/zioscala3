@@ -55,17 +55,23 @@ object DependecyGraph:
 
   lazy val make: BusinessLogic =
     val google: Google = GoogleImp.make
-    //classical dependency injection
     val businessLogic = BusinessLogic.make(google)
     businessLogic
 
 object Main extends scala.App:
-  Runtime.default.unsafeRunSync(program)
-  lazy val program =
+  Runtime.default.unsafeRunSync(program.provide(DependecyGraph.make))
+  lazy val program: ZIO[BusinessLogic, Nothing, Unit] =
     for
-      businessLogic <- DependecyGraph.live
+      businessLogic <- ZIO.environment
       _ <- console.putStrLn("-" * 50)
-      _ <- console.putStrLn(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
-      _ <- console.putStrLn(businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
+      cats <- ZIO
+        .environment[BusinessLogic]
+        .map(_.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
+      _ <- console.putStrLn(cats)
+      dogs <- ZIO
+        .environment[BusinessLogic]
+        .map(_.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
+      _ <- console.putStrLn(dogs)
+      dogs <- ZIO.environment[BusinessLogic].map(_.doesGoogleHaveEvenAmountOfPicturesOf("dogs"))
       _ <- console.putStrLn("-" * 50)
     yield ()

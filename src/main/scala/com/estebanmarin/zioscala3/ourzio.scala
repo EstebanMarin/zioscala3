@@ -35,6 +35,15 @@ object ZIO:
   def fromFunction[R, A](run: R => A): ZIO[R, Nothing, A] =
     ZIO(r => Right(run(r)))
 
+  inline def environment[R]: ZIO[R, Nothing, R] =
+    identity
+
+  inline def read[R]: ZIO[R, Nothing, R] =
+    identity
+
+  def identity[R]: ZIO[R, Nothing, R] =
+    ZIO.fromFunction(Predef.identity)
+
 object console:
   def putStrLn(line: => String) =
     ZIO.succeed(println(line))
