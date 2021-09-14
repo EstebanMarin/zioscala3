@@ -1,7 +1,7 @@
 package com.estebanmarin
 package zioscala3
 
-final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
+final class ZIO[R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO { r =>
       val errorOrA = run(r)
@@ -14,17 +14,16 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
     }
 
   def map[B](ab: A => B): ZIO[R, E, B] =
-    ZIO { r =>
+    ZIO { (r: R) =>
       val errorOrA = run(r)
       val errorOrB = errorOrA match
         case Right(a) => Right(ab(a))
         case Left(e) => Left(e)
-
       errorOrB
     }
 
   def catchAll[R1 <: R, E2, A1 >: A](h: E => ZIO[R1, E2, A1]): ZIO[R1, E2, A1] =
-    ZIO { r =>
+    ZIO { (r: R1) =>
       val errorOrA = run(r)
       // val zErrorb = errorOrA.fold(fa = h, fb = ZIO.succeed)
       val zErrorb = errorOrA match
@@ -58,6 +57,9 @@ object ZIO:
       try Right(a)
       catch case ex: Throwable => Left(ex)
     }
+
+  def fromFunction[R, A](run: R => A): ZIO[R, Throwable, A] =
+    ZIO(r => Right(run(r)))
 
 object console:
   def putStrLn(line: => String) =
