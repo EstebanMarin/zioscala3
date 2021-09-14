@@ -14,7 +14,7 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
     }
 
   def map[B](ab: A => B): ZIO[R, E, B] =
-    ZIO { (r: R) =>
+    ZIO { r =>
       val errorOrA = run(r)
       val errorOrB = errorOrA match
         case Right(a) => Right(ab(a))
@@ -23,7 +23,7 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
     }
 
   def catchAll[R1 <: R, E2, A1 >: A](h: E => ZIO[R1, E2, A1]): ZIO[R1, E2, A1] =
-    ZIO { (r: R1) =>
+    ZIO { r =>
       val errorOrA = run(r)
       // val zErrorb = errorOrA.fold(fa = h, fb = ZIO.succeed)
       val zErrorb = errorOrA match
@@ -32,6 +32,9 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
       val errorOrB = zErrorb.run(r)
       errorOrB
     }
+
+  def provide(r: => R): ZIO[Any, E, A] =
+    ZIO(_ => run(r))
 
   def mapError[E2](h: E => E2): ZIO[R, E2, A] =
     ZIO { r =>
@@ -58,7 +61,7 @@ object ZIO:
       catch case ex: Throwable => Left(ex)
     }
 
-  def fromFunction[R, A](run: R => A): ZIO[R, Throwable, A] =
+  def fromFunction[R, A](run: R => A): ZIO[R, Nothing, A] =
     ZIO(r => Right(run(r)))
 
 object console:
