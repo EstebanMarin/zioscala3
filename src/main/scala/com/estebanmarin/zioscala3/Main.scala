@@ -66,10 +66,11 @@ object DependecyGraph:
 
 object Main extends scala.App:
   // Runtime.default.unsafeRunSync(makeProgram.provide(DependecyGraph.make))
+  Runtime.default.unsafeRunSync(program)
   lazy val program =
     for
       bl <- DependecyGraph.live
-      p <- makeProgram.provide(zio.Has(bl) ++ zio.Has(console.Console.make))
+      p <- makeProgram.provide(zio.Has(bl) `union` zio.Has(console.Console.make))
     yield p
 
   lazy val makeProgram =
