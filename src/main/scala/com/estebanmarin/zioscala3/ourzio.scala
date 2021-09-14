@@ -16,6 +16,12 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def provide(r: => R): ZIO[Any, E, A] =
     ZIO(_ => run(r))
 
+  def provideSome[R0](f: R0 => R): ZIO[R0, E, A] =
+    for
+      r0 <- ZIO.environment[R0]
+      a <- provide(f(r0))
+    yield a
+
   def mapError[E2](h: E => E2): ZIO[R, E2, A] =
     ZIO(r => run(r).left.map(h))
 
@@ -83,8 +89,8 @@ object console:
 
 object Runtime:
   object default:
-    def unsafeRunSync[E, A](zio: => ZIO[ZEnv, E, A]): Either[E, A] =
-      zio.run(console.Console.make)
+    def unsafeRunSync[E, A](zio: => ZIO[Has[ZEnv], E, A]): Either[E, A] =
+      zio.run(Has(console.Console.make))
 
 type ZEnv = console.Console
 

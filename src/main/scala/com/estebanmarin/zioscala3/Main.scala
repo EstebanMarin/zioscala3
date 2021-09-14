@@ -52,7 +52,7 @@ object Main extends scala.App:
   lazy val program =
     for
       bl <- DependecyGraph.live
-      p <- makeProgram.provide(Has(bl) union Has(console.Console.make))
+      p <- makeProgram.provideSome[Has[ZEnv]](_ union Has(bl))
     yield p
 
   lazy val makeProgram =
