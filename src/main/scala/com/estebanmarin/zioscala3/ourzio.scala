@@ -1,7 +1,7 @@
 package com.estebanmarin
 package zioscala3
 
-final class ZIO[R, +E, +A](val run: R => Either[E, A]):
+final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO { r =>
       val errorOrA = run(r)
