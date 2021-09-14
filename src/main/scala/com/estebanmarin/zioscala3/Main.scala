@@ -39,8 +39,6 @@ object businessLogic:
           ): ZIO[Any, Nothing, Boolean] =
           google.countPicturesOf(topic).map(_ % 2 == 0)
 
-  // google.countPicturesOf(topic).map(_ % 2 == 0)
-
   def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[BusinessLogic, Nothing, Boolean] =
     ZIO.accessM(_.doesGoogleHaveEvenAmountOfPicturesOf(topic))
 
