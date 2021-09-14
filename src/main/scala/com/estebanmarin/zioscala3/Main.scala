@@ -65,13 +65,10 @@ object Main extends scala.App:
       businessLogic <- ZIO.environment
       _ <- console.putStrLn("-" * 50)
       cats <- ZIO
-        .environment[BusinessLogic]
-        .map(_.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
+        .access[BusinessLogic](_.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
       _ <- console.putStrLn(cats)
       dogs <- ZIO
-        .environment[BusinessLogic]
-        .map(_.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
+        .access[BusinessLogic](_.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
       _ <- console.putStrLn(dogs)
-      dogs <- ZIO.environment[BusinessLogic].map(_.doesGoogleHaveEvenAmountOfPicturesOf("dogs"))
       _ <- console.putStrLn("-" * 50)
     yield ()
