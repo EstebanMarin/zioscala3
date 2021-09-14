@@ -1,6 +1,8 @@
 package com.estebanmarin
 package zioscala3
 
+import scala.reflect.ClassTag
+
 final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO(r => run(r).fold(ZIO.fail, azb).run(r))
@@ -82,6 +84,21 @@ object console:
 object Runtime:
   object default:
     def unsafeRunSync[E, A](zio: => ZIO[ZEnv, E, A]): Either[E, A] =
-      zio.run(())
+      zio.run(console.Console.make)
 
-type ZEnv = Unit
+type ZEnv = console.Console
+
+final class Has[A] private (private val map: Map[String, Any])
+object Has:
+  def apply[A](a: A)(using tag: ClassTag[A]): Has[A] =
+    new Has(Map(tag.toString -> a))
+
+  extension [A <: Has[?]](a: A)
+    inline def ++[B <: Has[?]](b: B): A & B =
+      union(b)
+
+    infix def union[B <: Has[?]](b: B): A & B =
+      new Has(a.map ++ b.map).asInstanceOf[A & B]
+
+    def get[S](using tag: ClassTag[S], view: A => Has[S]): S =
+      a.map(tag.toString).asInstanceOf[S]
