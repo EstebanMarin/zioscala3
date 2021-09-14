@@ -16,6 +16,15 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def provide(r: => R): ZIO[Any, E, A] =
     ZIO(_ => run(r))
 
+  //This implies the ZEnv Environment
+  def provideCustomLayer[R1 <: Has[?]](r1: => R1)(using Has[ZEnv] & R1 => R): ZIO[Has[ZEnv], E, A] =
+    provideSome[Has[ZEnv]](_.union(r1).asInstanceOf[R])
+
+  def provideCustom[R1: ClassTag](r1: R1)(using Has[ZEnv] & Has[R1] => R): ZIO[Has[ZEnv], E, A] =
+    provideCustomLayer(Has(r1))
+
+  // def provideSome[R0](f: R0 => R): ZIO[R0, E, A] =
+  //   ZIO.accessM(r0 => provide(f(r0)))
   def provideSome[R0](f: R0 => R): ZIO[R0, E, A] =
     for
       r0 <- ZIO.environment[R0]
