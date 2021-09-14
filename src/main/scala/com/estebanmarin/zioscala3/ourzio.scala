@@ -117,5 +117,6 @@ object Has:
     infix def union[B <: Has[?]](b: B): A & B =
       new Has(a.map ++ b.map).asInstanceOf[A & B]
 
+    // Do not change order. Current is more type-inference issue
     def get[S](using A => Has[S])(using tag: ClassTag[S]): S =
       a.map(tag.toString).asInstanceOf[S]
