@@ -19,20 +19,25 @@ package zioscala3
 //       _ <- console.putStrLn("─" * 100)
 //     yield ()
 
-trait BusinessLogic:
-  def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean
-
 trait Google:
   def countPicturesOf(topic: String): Int
 
-object BusinessLogic:
-  lazy val live: ZIO[Google, Nothing, BusinessLogic] =
-    ZIO.fromFunction(make)
+object businessLogic:
+  trait BusinessLogic:
+    def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean
 
-  def make(google: Google): BusinessLogic =
-    new:
-      override def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
-        google.countPicturesOf(topic) % 2 == 0
+  object BusinessLogic:
+    lazy val live: ZIO[Google, Nothing, BusinessLogic] =
+      ZIO.fromFunction(make)
+
+    def make(google: Google): BusinessLogic =
+      new:
+        override def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
+          google.countPicturesOf(topic) % 2 == 0
+
+// def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): Boolean =
+
+end businessLogic
 
 object GoogleImp:
   lazy val live: ZIO[Any, Nothing, Google] =
@@ -43,32 +48,31 @@ object GoogleImp:
         if topic == "cats" then 1337 else 1338
 
 object DependecyGraph:
-  lazy val live: ZIO[Any, Nothing, BusinessLogic] =
+  lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic] =
     for
       google <- GoogleImp.live
-      businessLogicMake <- BusinessLogic.live.provide(google)
+      businessLogicMake <- businessLogic.BusinessLogic.live.provide(google)
     yield businessLogicMake
 
-  // val google = GoogleImp.live.provide(()).apply(())
-  // val businessLogic = BusinessLogic.live.provide(google)
-  // businessLogic
-
-  lazy val make: BusinessLogic =
-    val google: Google = GoogleImp.make
-    val businessLogic = BusinessLogic.make(google)
-    businessLogic
+  lazy val make: businessLogic.BusinessLogic =
+    val g: Google = GoogleImp.make
+    val bl = businessLogic.BusinessLogic.make(g)
+    bl
 
 object Main extends scala.App:
   Runtime.default.unsafeRunSync(program.provide(DependecyGraph.make))
-  lazy val program: ZIO[BusinessLogic, Nothing, Unit] =
+  lazy val program: ZIO[businessLogic.BusinessLogic, Nothing, Unit] =
     for
-      businessLogic <- ZIO.environment
       _ <- console.putStrLn("-" * 50)
       cats <- ZIO
-        .access[BusinessLogic](_.doesGoogleHaveEvenAmountOfPicturesOf("cats").toString)
-      _ <- console.putStrLn(cats)
+        .access[businessLogic.BusinessLogic](
+          _.doesGoogleHaveEvenAmountOfPicturesOf("cats")
+        )
+      _ <- console.putStrLn(cats.toString)
       dogs <- ZIO
-        .access[BusinessLogic](_.doesGoogleHaveEvenAmountOfPicturesOf("dogs").toString)
-      _ <- console.putStrLn(dogs)
+        .access[businessLogic.BusinessLogic](
+          _.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
+        )
+      _ <- console.putStrLn(dogs.toString)
       _ <- console.putStrLn("-" * 50)
     yield ()
