@@ -19,8 +19,11 @@ object businessLogic:
     trait Service:
       def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
 
-    lazy val live: ZIO[google.Google.Service, Nothing, Service] =
-      ZIO.fromFunction(make)
+    lazy val live: ZIO[google.Google, Nothing, Service] =
+      ZIO.fromFunction { env =>
+        val g = env.get[google.Google.Service]
+        make(g)
+      }
 
     def make(gl: google.Google.Service): Service =
       new:
@@ -42,11 +45,43 @@ object GoogleImp:
       override def countPicturesOf(topic: String): ZIO[Any, Nothing, Int] =
         ZIO.succeed(if topic == "cats" then 1337 else 1338)
 
+object controller:
+  type Controller = Has[Controller.Service]
+  object Controller:
+    trait Service:
+      def run: ZIO[Any, Nothing, Unit]
+
+    lazy val live: ZIO[
+      businessLogic.BusinessLogic & console.Console,
+      Nothing,
+      Service,
+    ] = ZIO.fromFunction{ env =>
+      val bl = env.get[businessLogic.BusinessLogic.Service]
+      val c = env.get[console.Console.Service]
+      make(bl, c)
+     }
+
+    def make(bl: businessLogic.BusinessLogic.Service, c: console.Console.Service): Service =
+      new:
+        override lazy val run: ZIO[Any, Nothing, Unit] =
+          for
+            _ <- c.putStrLn("-" * 50)
+            cats <- bl.doesGoogleHaveEvenAmountOfPicturesOf("cats")
+            _ <- c.putStrLn(cats.toString)
+            dogs <- bl.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
+            _ <- c.putStrLn(dogs.toString)
+            _ <- c.putStrLn("-" * 50)
+          yield ()
+
+    lazy val run: ZIO[Controller, Nothing, Unit] =
+      ZIO.accessM(_.get.run)
+
+
 object DependecyGraph:
   lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic.Service] =
     for
       google <- GoogleImp.live
-      businessLogicMake <- businessLogic.BusinessLogic.live.provide(google)
+      businessLogicMake <- businessLogic.BusinessLogic.live.provide(Has(google))
     yield businessLogicMake
 
   lazy val make: businessLogic.BusinessLogic.Service =
