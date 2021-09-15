@@ -7,14 +7,16 @@ trait Google:
   def countPicturesOf(topic: String): ZIO[Any, Nothing, Int]
 
 object businessLogic:
-  trait BusinessLogic:
-    def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
+  type BusinessLogic = Has[BusinessLogic.Service]
 
   object BusinessLogic:
-    lazy val live: ZIO[Google, Nothing, BusinessLogic] =
+    trait Service:
+      def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
+
+    lazy val live: ZIO[Google, Nothing, Service] =
       ZIO.fromFunction(make)
 
-    def make(google: Google): BusinessLogic =
+    def make(google: Google): Service =
       new:
         override def doesGoogleHaveEvenAmountOfPicturesOf(
             topic: String
@@ -22,7 +24,7 @@ object businessLogic:
           google.countPicturesOf(topic).map(_ % 2 == 0)
 
   def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[BusinessLogic, Nothing, Boolean] =
-    ZIO.accessM(_.doesGoogleHaveEvenAmountOfPicturesOf(topic))
+    ZIO.accessM(_.get.doesGoogleHaveEvenAmountOfPicturesOf(topic))
 
 end businessLogic
 
@@ -35,19 +37,18 @@ object GoogleImp:
         ZIO.succeed(if topic == "cats" then 1337 else 1338)
 
 object DependecyGraph:
-  lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic] =
+  lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic.Service] =
     for
       google <- GoogleImp.live
       businessLogicMake <- businessLogic.BusinessLogic.live.provide(google)
     yield businessLogicMake
 
-  lazy val make: businessLogic.BusinessLogic =
+  lazy val make: businessLogic.BusinessLogic.Service =
     val g = GoogleImp.make
     val bl = businessLogic.BusinessLogic.make(g)
     bl
 
 object Main extends scala.App:
-  // Runtime.default.unsafeRunSync(makeProgram.provide(DependecyGraph.make))
   Runtime.default.unsafeRunSync(program)
   lazy val program =
     for
@@ -57,11 +58,11 @@ object Main extends scala.App:
 
   lazy val makeProgram =
     for
-      env <- ZIO.environment[console.Console & Has[businessLogic.BusinessLogic]]
+      env <- ZIO.environment[console.Console & businessLogic.BusinessLogic]
       _ <- console.putStrLn("-" * 50)
-      cats <- env.get[businessLogic.BusinessLogic].doesGoogleHaveEvenAmountOfPicturesOf("cats")
+      cats <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats")
       _ <- console.putStrLn(cats.toString)
-      dogs <- env.get[businessLogic.BusinessLogic].doesGoogleHaveEvenAmountOfPicturesOf("dogs")
+      dogs <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
       _ <- console.putStrLn(dogs.toString)
       _ <- console.putStrLn("-" * 50)
     yield ()
