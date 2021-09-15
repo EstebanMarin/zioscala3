@@ -148,6 +148,20 @@ final class ZLayer[-R, +E, +A](val zio: ZIO[R, E, A]):
   inline def provide(r: => R): ZLayer[Any, E, A] =
     ZLayer(this.zio.provide(r))
 
+  def >>>[E1 >: E, B <: Has[?]](
+      that: ZLayer[A, E1, B]
+    )(using
+      A => Has[?]
+    ): ZLayer[R, E1, B] =
+    this.flatMap(a => that.provide(a))
+
+  def ++[R1 <: Has[?], E1 >: E, B <: Has[?]](
+      that: ZLayer[R1, E1, B]
+    )(using
+      view: A => Has[?]
+    ): ZLayer[R & R1, E1, A & B] =
+    this.zip(that).map((a, b) => view(a).union(b).asInstanceOf[A & B])
+
 object ZLayer:
   def succed[A: ClassTag](
       a: => A

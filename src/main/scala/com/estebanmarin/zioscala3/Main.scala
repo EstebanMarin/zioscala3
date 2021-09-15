@@ -72,23 +72,14 @@ object controller:
 
 
 object DependecyGraph:
-  lazy val live: ZLayer[Any, Nothing, controller.Controller] =
-    for
-      (g, con) <- GoogleImp.live.zip(console.Console.live)
-      bl <- businessLogic.BusinessLogic.live.provide(g)
-      c <- controller.Controller.live.provide(bl ++ con)
-    yield c
-
-  // lazy val make: controller.Controller.Service =
-  //   val g = GoogleImp.make
-  //   val bl = businessLogic.BusinessLogic.make(g)
-  //   val con = console.Console.make
-  //   val c = controller.Controller.make(bl, con)
-  //   c
+  lazy val env: ZLayer[Any, Nothing, controller.Controller] =
+    GoogleImp.live >>> businessLogic.BusinessLogic.live ++
+      console.Console.live >>>
+      controller.Controller.live
 
 object Main extends scala.App:
   Runtime.default.unsafeRunSync(program)
   lazy val program =
     // DependecyGraph.live.flatMap(_.get.run)
     // DependecyGraph.live.flatMap(r => controller.run.provide(r))
-  controller.run.provideLayer(DependecyGraph.live)
+  controller.run.provideLayer(DependecyGraph.env)
