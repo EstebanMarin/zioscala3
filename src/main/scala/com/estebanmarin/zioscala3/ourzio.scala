@@ -83,8 +83,8 @@ object console:
       def putStrLn(line: => String): ZIO[Any, Nothing, Unit]
       def getStrLn: ZIO[Any, Nothing, String]
 
-    lazy val live: ZIO[Any, Nothing, Service] =
-      ZIO.succeed(make)
+    lazy val live: ZIO[Any, Nothing, Console] =
+      ZIO.succeed(Has(make))
     lazy val make: Service =
       new:
         def putStrLn(line: => String) =

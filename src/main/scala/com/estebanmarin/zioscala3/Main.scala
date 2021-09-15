@@ -19,10 +19,10 @@ object businessLogic:
     trait Service:
       def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
 
-    lazy val live: ZIO[google.Google, Nothing, Service] =
+    lazy val live: ZIO[google.Google, Nothing, BusinessLogic] =
       ZIO.fromFunction { env =>
         val g = env.get[google.Google.Service]
-        make(g)
+        Has(make(g))
       }
 
     def make(gl: google.Google.Service): Service =
@@ -38,8 +38,8 @@ object businessLogic:
 end businessLogic
 
 object GoogleImp:
-  lazy val live: ZIO[Any, Nothing, google.Google.Service] =
-    ZIO.succeed(make)
+  lazy val live: ZIO[Any, Nothing, google.Google] =
+    ZIO.succeed(Has(make))
   lazy val make: google.Google.Service =
     new:
       override def countPicturesOf(topic: String): ZIO[Any, Nothing, Int] =
@@ -54,56 +54,48 @@ object controller:
     lazy val live: ZIO[
       businessLogic.BusinessLogic & console.Console,
       Nothing,
-      Service,
+      Controller,
     ] = ZIO.fromFunction{ env =>
       val bl = env.get[businessLogic.BusinessLogic.Service]
       val c = env.get[console.Console.Service]
-      make(bl, c)
+      Has(make(bl, c))
      }
 
-    def make(bl: businessLogic.BusinessLogic.Service, c: console.Console.Service): Service =
+    def make(bl: businessLogic.BusinessLogic.Service, con: console.Console.Service): Service =
       new:
         override lazy val run: ZIO[Any, Nothing, Unit] =
           for
-            _ <- c.putStrLn("-" * 50)
+            _ <- con.putStrLn("-" * 50)
             cats <- bl.doesGoogleHaveEvenAmountOfPicturesOf("cats")
-            _ <- c.putStrLn(cats.toString)
+            _ <- con.putStrLn(cats.toString)
             dogs <- bl.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
-            _ <- c.putStrLn(dogs.toString)
-            _ <- c.putStrLn("-" * 50)
+            _ <- con.putStrLn(dogs.toString)
+            _ <- con.putStrLn("-" * 50)
           yield ()
 
-    lazy val run: ZIO[Controller, Nothing, Unit] =
-      ZIO.accessM(_.get.run)
+  lazy val run: ZIO[Controller, Nothing, Unit] =
+    ZIO.accessM(_.get.run)
 
 
 object DependecyGraph:
-  lazy val live: ZIO[Any, Nothing, businessLogic.BusinessLogic.Service] =
+  lazy val live: ZIO[Any, Nothing, controller.Controller] =
     for
-      google <- GoogleImp.live
-      businessLogicMake <- businessLogic.BusinessLogic.live.provide(Has(google))
-    yield businessLogicMake
+      g <- GoogleImp.live
+      bl <- businessLogic.BusinessLogic.live.provide(g)
+      con <- console.Console.live
+      c <- controller.Controller.live.provide(bl ++ con)
+    yield c
 
-  lazy val make: businessLogic.BusinessLogic.Service =
+  lazy val make: controller.Controller.Service =
     val g = GoogleImp.make
     val bl = businessLogic.BusinessLogic.make(g)
-    bl
+    val con = console.Console.make
+    val c = controller.Controller.make(bl, con)
+    c
 
 object Main extends scala.App:
   Runtime.default.unsafeRunSync(program)
   lazy val program =
-    for
-      bl <- DependecyGraph.live
-      p <- makeProgram.provideCustom(bl)
-    yield p
-
-  lazy val makeProgram =
-    for
-      env <- ZIO.environment[console.Console & businessLogic.BusinessLogic]
-      _ <- console.putStrLn("-" * 50)
-      cats <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("cats")
-      _ <- console.putStrLn(cats.toString)
-      dogs <- businessLogic.doesGoogleHaveEvenAmountOfPicturesOf("dogs")
-      _ <- console.putStrLn(dogs.toString)
-      _ <- console.putStrLn("-" * 50)
-    yield ()
+    // DependecyGraph.live.flatMap(_.get.run)
+    // DependecyGraph.live.flatMap(r => controller.run.provide(r))
+    controller.run.provide(Has(DependecyGraph.make))
