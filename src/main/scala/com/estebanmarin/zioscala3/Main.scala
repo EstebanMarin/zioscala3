@@ -3,8 +3,14 @@ package zioscala3
 
 import com.estebanmarin.zioscala3.businessLogic.BusinessLogic
 
-trait Google:
-  def countPicturesOf(topic: String): ZIO[Any, Nothing, Int]
+object google:
+  type Google = Has[Google.Service]
+  object Google:
+    trait Service:
+      def countPicturesOf(topic: String): ZIO[Any, Nothing, Int]
+
+  def countPicturesOf(topic: String): ZIO[Google, Nothing, Int] =
+    ZIO.accessM(_.get.countPicturesOf(topic))
 
 object businessLogic:
   type BusinessLogic = Has[BusinessLogic.Service]
@@ -13,15 +19,15 @@ object businessLogic:
     trait Service:
       def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
 
-    lazy val live: ZIO[Google, Nothing, Service] =
+    lazy val live: ZIO[google.Google.Service, Nothing, Service] =
       ZIO.fromFunction(make)
 
-    def make(google: Google): Service =
+    def make(gl: google.Google.Service): Service =
       new:
         override def doesGoogleHaveEvenAmountOfPicturesOf(
             topic: String
           ): ZIO[Any, Nothing, Boolean] =
-          google.countPicturesOf(topic).map(_ % 2 == 0)
+          gl.countPicturesOf(topic).map(_ % 2 == 0)
 
   def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[BusinessLogic, Nothing, Boolean] =
     ZIO.accessM(_.get.doesGoogleHaveEvenAmountOfPicturesOf(topic))
@@ -29,9 +35,9 @@ object businessLogic:
 end businessLogic
 
 object GoogleImp:
-  lazy val live: ZIO[Any, Nothing, Google] =
+  lazy val live: ZIO[Any, Nothing, google.Google.Service] =
     ZIO.succeed(make)
-  lazy val make: Google =
+  lazy val make: google.Google.Service =
     new:
       override def countPicturesOf(topic: String): ZIO[Any, Nothing, Int] =
         ZIO.succeed(if topic == "cats" then 1337 else 1338)
