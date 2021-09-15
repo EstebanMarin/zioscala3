@@ -7,6 +7,12 @@ final class ZIO[-R, +E, +A](val run: R => Either[E, A]):
   def flatMap[R1 <: R, E1 >: E, B](azb: A => ZIO[R1, E1, B]): ZIO[R1, E1, B] =
     ZIO(r => run(r).fold(ZIO.fail, azb).run(r))
 
+  def zip[R1 <: R, E1 >: E, B](that: ZIO[R1, E1, B]): ZIO[R1, E1, (A, B)] =
+    for
+      a <- this
+      b <- that
+    yield a -> b
+
   def map[B](ab: A => B): ZIO[R, E, B] =
     ZIO(r => run(r).map(ab))
 
