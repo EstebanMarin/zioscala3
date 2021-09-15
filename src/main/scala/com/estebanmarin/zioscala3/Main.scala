@@ -19,11 +19,8 @@ object businessLogic:
     trait Service:
       def doesGoogleHaveEvenAmountOfPicturesOf(topic: String): ZIO[Any, Nothing, Boolean]
 
-    lazy val live: ZIO[google.Google, Nothing, BusinessLogic] =
-      ZIO.fromFunction { env =>
-        val g = env.get[google.Google.Service]
-        Has(make(g))
-      }
+    lazy val live: ZLayer[google.Google, Nothing, BusinessLogic] =
+      ZLayer.fromService(make)
 
     def make(gl: google.Google.Service): Service =
       new:
@@ -38,8 +35,8 @@ object businessLogic:
 end businessLogic
 
 object GoogleImp:
-  lazy val live: ZIO[Any, Nothing, google.Google] =
-    ZIO.succeed(Has(make))
+  lazy val live: ZLayer[Any, Nothing, google.Google] =
+    ZLayer.succed(make)
   lazy val make: google.Google.Service =
     new:
       override def countPicturesOf(topic: String): ZIO[Any, Nothing, Int] =
@@ -51,15 +48,12 @@ object controller:
     trait Service:
       def run: ZIO[Any, Nothing, Unit]
 
-    lazy val live: ZIO[
+    lazy val live: ZLayer[
       businessLogic.BusinessLogic & console.Console,
       Nothing,
       Controller,
-    ] = ZIO.fromFunction{ env =>
-      val bl = env.get[businessLogic.BusinessLogic.Service]
-      val c = env.get[console.Console.Service]
-      Has(make(bl, c))
-     }
+    ] = 
+      ZLayer.fromServices(make)
 
     def make(bl: businessLogic.BusinessLogic.Service, con: console.Console.Service): Service =
       new:
@@ -78,24 +72,23 @@ object controller:
 
 
 object DependecyGraph:
-  lazy val live: ZIO[Any, Nothing, controller.Controller] =
+  lazy val live: ZLayer[Any, Nothing, controller.Controller] =
     for
-      g <- GoogleImp.live
+      (g, con) <- GoogleImp.live.zip(console.Console.live)
       bl <- businessLogic.BusinessLogic.live.provide(g)
-      con <- console.Console.live
       c <- controller.Controller.live.provide(bl ++ con)
     yield c
 
-  lazy val make: controller.Controller.Service =
-    val g = GoogleImp.make
-    val bl = businessLogic.BusinessLogic.make(g)
-    val con = console.Console.make
-    val c = controller.Controller.make(bl, con)
-    c
+  // lazy val make: controller.Controller.Service =
+  //   val g = GoogleImp.make
+  //   val bl = businessLogic.BusinessLogic.make(g)
+  //   val con = console.Console.make
+  //   val c = controller.Controller.make(bl, con)
+  //   c
 
 object Main extends scala.App:
   Runtime.default.unsafeRunSync(program)
   lazy val program =
     // DependecyGraph.live.flatMap(_.get.run)
     // DependecyGraph.live.flatMap(r => controller.run.provide(r))
-    controller.run.provide(Has(DependecyGraph.make))
+  controller.run.provideLayer(DependecyGraph.live)
