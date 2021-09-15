@@ -1,6 +1,6 @@
 # Follow Vlad along
 
-In case you need compiling code from the series with matching Commits to the series
+In case you need compiling code from the series with matching Commits to the Youtube Chapters 
 
 https://www.youtube.com/playlist?list=PLJGDHERh23x-_ammk-n2XuZWhoRVB-wAF
 
